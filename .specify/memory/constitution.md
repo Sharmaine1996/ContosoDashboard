@@ -1,50 +1,86 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report (2026-03-23)
+- Version change: 0.0.0 → 1.0.0
+- List of modified principles: All principles added (7 core principles defined)
+- Added sections: Additional Constraints, Development Workflow
+- Removed sections: None
+- Templates requiring updates: None - templates are generic and don't reference specific principles
+- Follow-up TODOs: None - constitution is complete and aligned
+-->
+# ContosoDashboard Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Training-First Development
+Every feature in ContosoDashboard is designed primarily for educational purposes in Spec-Driven Development training. Features must demonstrate best practices, include comprehensive documentation, and serve as examples for students learning ASP.NET Core, Blazor, and Entity Framework.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Mock Authentication (NON-NEGOTIABLE)
+ContosoDashboard uses cookie-based mock authentication exclusively for training environments. No external identity providers or password hashing required. Authentication must support role-based access control with hierarchical permissions (Employee → TeamLead → ProjectManager → Administrator).
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Offline-First Architecture
+The application must work completely offline without cloud dependencies. All infrastructure (database, file storage, authentication) uses local implementations with interfaces for future cloud migration. SQLite database with Entity Framework Core ensures portability across platforms.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Clean Architecture with Service Layer
+Business logic is strictly separated into service classes with dependency injection. Controllers/Pages contain only UI logic. Services implement interfaces for testability and maintainability. No direct database access from UI components.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Security by Design
+IDOR protection, service-level authorization checks, and defense in depth are mandatory. All endpoints require authentication; role-based policies enforce access control. Security headers (CSP, X-Frame-Options, etc.) are configured by default.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. Comprehensive Testing
+Unit tests for services, integration tests for database operations, and UI tests for critical workflows. Test data seeding ensures consistent test environments. Code coverage targets established for all new features.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### VII. Simplicity and Clarity
+Start with minimal viable features. Avoid over-engineering. Code must be readable, well-commented, and follow C# best practices. YAGNI principles applied - implement only what's needed for training scenarios.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Additional Constraints
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Technology Stack Requirements
+- Framework: ASP.NET Core 8.0+ with Blazor Server
+- Database: SQLite for development, Azure SQL ready for production
+- UI: Bootstrap 5.3 with responsive design
+- Authentication: Cookie-based mock system (Azure AD interface ready)
+- Architecture: Clean separation (Models, Services, Pages, Shared)
+
+### Performance Standards
+- Page load times under 2 seconds
+- Database queries optimized with proper indexing
+- Memory usage monitored in development
+- No blocking operations in UI threads
+
+### Documentation Requirements
+- README with setup instructions and feature overview
+- Code comments for complex business logic
+- API documentation for service methods
+- Training scenarios documented in StakeholderDocs
+
+## Development Workflow
+
+### Code Review Process
+- All PRs require review by at least one team member
+- Constitution compliance must be verified
+- Security review for authentication/authorization changes
+- Performance impact assessment for database changes
+
+### Quality Gates
+- Build must pass with no warnings
+- Unit test coverage >80% for new code
+- Integration tests pass in CI/CD
+- Manual testing of critical user workflows
+
+### Deployment Approval
+- Development deployments automatic
+- Staging requires code review approval
+- Production requires additional testing sign-off
+- Rollback plan documented for all deployments
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Constitution supersedes all other practices. Amendments require:
+1. Clear rationale documented
+2. Impact assessment on existing code
+3. Migration plan for implementation
+4. Approval from project maintainers
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+All development activities must verify compliance with these principles. Use StakeholderDocs for runtime development guidance and training scenarios.
+
+**Version**: 1.0.0 | **Ratified**: 2026-03-23 | **Last Amended**: 2026-03-23
