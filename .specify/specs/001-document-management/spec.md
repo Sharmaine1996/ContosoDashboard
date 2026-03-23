@@ -1,9 +1,18 @@
-# Feature Specification: Document Upload and Management
+C# Feature Specification: Document Upload and Management
 
 **Feature Branch**: `001-document-management`  
 **Created**: 2026-03-23  
 **Status**: Draft  
 **Input**: User description from StakeholderDocs/document-upload-and-management-feature.md
+
+## Clarifications
+
+### Session 2026-03-23
+- Q: Document sharing scope (individual users only vs. teams vs. departments) → A: Individual users AND teams (project-based groups)
+- Q: Virus/malware scanning for training/offline environment → A: Interface abstraction (IVirusScanService) with mock for training, real implementation for production
+- Q: Document deletion cascade behavior (hard delete, soft delete, recipient retention, notify before delete) → A: Hard delete with cascade - document immediately removed, all shares deleted, recipients lose access instantly
+- Q: File replacement & version tracking strategy → A: Audit trail only - physical file replaced, DocumentActivity logs replacement event, no user-facing version history
+- Q: Upload UI/UX async behavior (blocking, background modal, fully async, user choice) → A: Background with modal and cancel - upload runs in background with progress modal user can cancel, UI partially responsive
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -17,9 +26,10 @@ As a Contoso employee, I want to upload work-related documents to the dashboard 
 
 **Acceptance Scenarios**:
 
-1. **Given** I am logged in as an employee, **When** I select a PDF file under 25MB and provide required metadata (title, category), **Then** the file uploads successfully and appears in my document list
-2. **Given** I attempt to upload a file over 25MB, **When** I submit the upload, **Then** I receive a clear error message and the upload is rejected
-3. **Given** I attempt to upload an unsupported file type (e.g., .exe), **When** I submit the upload, **Then** I receive an error message and the upload is rejected
+1. **Given** I am logged in as an employee, **When** I select a PDF file under 25MB and provide required metadata (title, category), **Then** a modal dialog appears with progress bar showing upload progress while UI remains partially responsive
+2. **Given** an upload is in progress, **When** I click the Cancel button, **Then** the upload stops and the modal closes, returning me to the document list without saving
+3. **Given** I attempt to upload a file over 25MB, **When** I submit the upload, **Then** I receive a clear error message in the modal and the upload is rejected
+4. **Given** I attempt to upload an unsupported file type (e.g., .exe), **When** I submit the upload, **Then** I receive an error message in the modal and the upload is rejected
 
 ---
 
@@ -65,8 +75,9 @@ As a document owner, I want to share documents with specific users or teams so t
 
 **Acceptance Scenarios**:
 
-1. **Given** I own a document, **When** I share it with specific users, **Then** those users receive in-app notifications and can access the document in their "Shared with Me" section
-2. **Given** someone shares a document with me, **When** I view my notifications, **Then** I see a notification about the shared document with a link to view it
+1. **Given** I own a document, **When** I share it with individual users or teams, **Then** all recipients receive in-app notifications and can access the document in their "Shared with Me" section
+2. **Given** someone shares a document with my team, **When** I view my notifications, **Then** I see a notification about the shared document with a link to view it
+3. **Given** I am a team member on a shared project, **When** someone shares a document with my project team, **Then** I can access it through the shared documents section
 
 ---
 
@@ -111,13 +122,13 @@ As a dashboard user, I want to see recent document activity on my dashboard so I
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow authenticated users to upload files up to 25MB in size
+- **FR-001**: System MUST allow authenticated users to upload files up to 25MB in size with progress indicator in modal dialog that runs asynchronously (UI remains partially responsive, user can cancel upload)
 - **FR-002**: System MUST support PDF, Microsoft Office documents (Word, Excel, PowerPoint), text files, and images (JPEG, PNG) file types
 - **FR-003**: System MUST require document title and category selection during upload
 - **FR-004**: System MUST automatically capture upload metadata (date, time, user, file size, MIME type)
 - **FR-005**: System MUST store files securely outside web-accessible directories using GUID-based filenames
 - **FR-006**: System MUST validate file types and reject unsupported formats with clear error messages
-- **FR-007**: System MUST implement virus/malware scanning before file storage
+- **FR-007**: System MUST implement virus/malware scanning via abstracted `IVirusScanService` interface - MockVirusScanService for training (always passes with logging), real implementation for production
 - **FR-008**: System MUST provide document browsing with sorting by title, date, category, and file size
 - **FR-009**: System MUST provide filtering by category, project, and date range
 - **FR-010**: System MUST implement full-text search across title, description, tags, and uploader name
@@ -126,9 +137,9 @@ As a dashboard user, I want to see recent document activity on my dashboard so I
 - **FR-013**: System MUST allow document download for authorized users
 - **FR-014**: System MUST provide in-browser preview for PDF and image files
 - **FR-015**: System MUST allow document owners to edit metadata (title, description, category, tags)
-- **FR-016**: System MUST allow document owners to replace files with updated versions
-- **FR-017**: System MUST allow document owners and project managers to delete documents
-- **FR-018**: System MUST implement document sharing with specific users and notification system
+- **FR-016**: System MUST allow document owners to replace files with updated versions (new file overwrites old physical file on disk, no version history for users, replacement event logged for audit)
+- **FR-017**: System MUST allow document owners and project managers to delete documents with hard delete (immediate removal, cascading share deletion, recipients lose access instantly)
+- **FR-018**: System MUST implement document sharing with individual users and teams (project-based groups) with notification system
 - **FR-019**: System MUST integrate with existing projects and tasks (documents can be associated with projects/tasks)
 - **FR-020**: System MUST display recent documents on dashboard home page
 - **FR-021**: System MUST include document counts in dashboard summary statistics
@@ -140,8 +151,8 @@ As a dashboard user, I want to see recent document activity on my dashboard so I
 
 ### Key Entities *(include if feature involves data)*
 
-- **Document**: Represents an uploaded file with metadata (title, description, category, file path, upload date, uploader, file size, MIME type, associated project)
-- **DocumentShare**: Tracks sharing relationships between documents and users (document ID, shared with user ID, shared by user ID, share date)
+- **Document**: Represents an uploaded file with metadata (title, description, category, file path, upload date, uploader, file size, MIME type, associated project) - deletion is hard delete with cascade to DocumentShare
+- **DocumentShare**: Tracks sharing relationships between documents and users (document ID, shared with user ID, shared by user ID, share date) - automatically deleted when parent Document is deleted, recipients lose access immediately
 
 ## Success Criteria *(mandatory)*
 
@@ -164,13 +175,18 @@ As a dashboard user, I want to see recent document activity on my dashboard so I
 - Most documents will be under 10 MB in size
 - Users are familiar with basic file management concepts
 - Local filesystem storage is acceptable for training purposes
+- Training uses mock virus scanning (always returns safe) - no real malware detection in training environment
+- File replacement uses simple overwrite (audit trail only) - no version history retained, users cannot access previous versions
+- Document activity logging (FR-025) provides compliance audit trail for all file operations
+- Upload UI implemented as modal dialog with async background processing via Blazor Server
+- Users can cancel in-progress uploads via modal Cancel button
 - Cloud migration to Azure Blob Storage is planned for production deployment
 - Users may work offline (no internet connection required for core functionality)
 
 ## Out of Scope
 
 - Real-time collaborative editing of documents
-- Version history and rollback capabilities
+- Version history and rollback capabilities (file replacement overwrites, no user-facing version tracking)
 - Advanced document workflows (approval processes, document routing)
 - Integration with external systems (SharePoint, OneDrive)
 - Mobile app support (initial release is web-only)
